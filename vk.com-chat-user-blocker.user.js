@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name        VK.com chat user blocker
 // @namespace   vk_com_chat_user_blocker
-// @author      Angly Cat
 // @description Allows blocking users in vk.com chats.
 // @include     https://vk.com/*
-// @version     1
+// @version     2
 // @grant       none
 // ==/UserScript==
 
@@ -68,7 +67,7 @@
     stack.classList.add('processed');
 
     const avatarLink = stack.querySelector('.im_grid');
-    aliasesSet.add(avatarLink.href);
+    aliasesSet.add(avatarLink.href.replace(/.+\//, '/'));
     avatarLink.href = '#';
     
     const avatar = avatarLink.querySelector('img');
@@ -97,14 +96,32 @@
   
   function purifyReplyLinks(link) {
     link.href = '#';
-    link.textContent;
+    link.textContent = 'Blocked user';
     
-    link.parentNode.querySelector('.im-replied--text').textContent = 'Message removed.';
+    const quotedPhoto = link.parentNode.parentNode.parentNode.querySelector('.im-replied--photo-wrapper');
+    if (quotedPhoto) {
+      quotedPhoto.remove();
+    }
+    
+    link.parentNode.parentNode.querySelector('.im-replied--text').textContent = 'Message removed.';
+  }
+  
+  function purifyPinnedMessage(link) {
+    link.href = '#';
+    link.textContent = 'Blocked user';
+    
+    const content = link.parentNode.parentNode.querySelector('.im-page-pinned--content');
+    content.textContent = 'Message removed.';
+  }
+  
+  function purifyPinningMessage(link) {
+    link.href = '#';
+    link.textContent = 'Blocked used';
   }
   
   function process() {
     console.log('process');
-    const chat = document.querySelector('._im_peer_history');
+    const chat = document.querySelector('.im-page--history');
 
     const stacksWithoutBlockButton = chat.querySelectorAll('._im_peer_history > .im-mess-stack:not(.with-toggle-block-button)');
     stacksWithoutBlockButton.forEach(addToggleBlockButton);
@@ -124,8 +141,19 @@
       corruptedStacks.forEach(purifyStackContent);
     });
     
-    const corruptedReplyLinks = chat.querySelectorAll([...aliasesSet].map((alias) => `.im-replied--author-link[href="${alias}"]`));
+    const corruptedReplyLinks = chat.querySelectorAll([...aliasesSet].map((alias) => `.im-replied--author-link[href="${alias}"]`).join());
     corruptedReplyLinks.forEach(purifyReplyLinks);
+    
+    console.log('chat', chat);
+    console.log('sel', [...aliasesSet].map((alias) => `.im-page-pinned--name[href="${alias}"]`).join());
+    
+    const corruptedPinnedAuthorLink = chat.querySelector([...aliasesSet].map((alias) => `.im-page-pinned--name[href="${alias}"]`).join());
+    if (corruptedPinnedAuthorLink) {
+      purifyPinnedMessage(corruptedPinnedAuthorLink);
+    }
+    
+    const corruptedPinningAuthorLinks = chat.querySelectorAll([...aliasesSet].map((alias) => `.im_srv_lnk[href="${alias}"]`).join());
+    corruptedPinningAuthorLinks.forEach(purifyPinningMessage);
   }
  
   const observer = new MutationObserver(scheduleProcessing);
