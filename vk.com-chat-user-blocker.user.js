@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name        VK.com chat user blocker
 // @namespace   vk_com_chat_user_blocker
+// @author      Angly Cat
 // @description Allows blocking users in vk.com chats.
 // @include     https://vk.com/*
 // @version     1
